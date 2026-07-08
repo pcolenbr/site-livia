@@ -91,13 +91,57 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </svg>
         <h1>Redirecionando para o WhatsApp...</h1>
         <p>Você será redirecionado em instantes.</p>
-        <a href="https://wa.me/553184617174?text=Gostaria%20de%20saber%20mais%20sobre%20a%20consulta%20da%20Dra.%20Livia">Clique aqui se não for redirecionado</a>
+        <a id="fallback-link" href="https://wa.me/553184617174">Clique aqui se não for redirecionado</a>
     </div>
 
     <script>
-        setTimeout(function() {
-            window.location.href = "https://wa.me/553184617174?text=Gostaria%20de%20saber%20mais%20sobre%20a%20consulta%20da%20Dra.%20Livia";
-        }, 2000);
+        (function () {
+            var PHONE = "553184617174";
+
+            // Mensagem padrão (usada em index.html, saude-alem-do-exame.html e qualquer origem não mapeada).
+            // A chave "origem" pode vir de: ?origem=xxx na URL, ou detecção automática pela página anterior.
+            var DEFAULT_MSG = "Gostaria de saber mais sobre a consulta da Dra. Livia";
+            var MENSAGENS = {
+                "emagreca": "Olá! Gostaria de saber mais sobre o tratamento de obesidade com a Dra. Lívia Macedo."
+            };
+
+            // Mapeia nomes de arquivo de páginas para uma chave de origem (usado no fallback via referrer).
+            var PAGINA_PARA_ORIGEM = {
+                "emagreca-com-saude.html": "emagreca"
+            };
+
+            function getOrigem() {
+                // 1) Prioridade: parâmetro explícito ?origem= na URL
+                var params = new URLSearchParams(window.location.search);
+                var origem = params.get("origem");
+                if (origem && MENSAGENS[origem]) {
+                    return origem;
+                }
+
+                // 2) Fallback: detectar pela página de onde a pessoa veio
+                try {
+                    if (document.referrer) {
+                        var path = new URL(document.referrer).pathname;
+                        var arquivo = path.substring(path.lastIndexOf("/") + 1) || "index.html";
+                        if (PAGINA_PARA_ORIGEM[arquivo]) {
+                            return PAGINA_PARA_ORIGEM[arquivo];
+                        }
+                    }
+                } catch (e) { /* ignora URL inválida */ }
+
+                return null;
+            }
+
+            var origem = getOrigem();
+            var texto = (origem && MENSAGENS[origem]) ? MENSAGENS[origem] : DEFAULT_MSG;
+            var destino = "https://wa.me/" + PHONE + "?text=" + encodeURIComponent(texto);
+
+            // Atualiza o link de fallback e agenda o redirecionamento
+            document.getElementById("fallback-link").href = destino;
+            setTimeout(function () {
+                window.location.href = destino;
+            }, 2000);
+        })();
     </script>
 </body>
 </html>
